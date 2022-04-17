@@ -5,12 +5,8 @@ const morgan = require("morgan");
 const rootRoute = require("./routes/root");
 const authRoutes = require("./routes/authRoutes");
 
-const globalErrorHandler = require("./controllers/errorController");
-
 const appError = require("./utils/appError");
 
-
-const { config } = require("./config/index");
 
 const app = express();
 const { reverseMap } = require("./reverseMap");

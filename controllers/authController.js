@@ -203,7 +203,7 @@ const restPassword = async (req, res, next) => {
   }
 }
 
-const updatePassword = async (req, res, next) => {
+const updatePassword = async (req, res, _next) => {
   try {
     const { _id, oldPassword, newpassword, newPasswordConfirm } = req.body;
     const user = await userModel.findById(_id).select("+password");
