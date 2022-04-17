@@ -140,9 +140,8 @@ const login = async (req, res, next) => {
     if (!correct) {
       throw new ApiError("Incorrect password!", 412);
     }
-
     const token = signToken(user._id);
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       data: {
         token,
@@ -183,7 +182,7 @@ const forgetPassword = async (req, res, next) => {
 const restPassword = async (req, res, next) => {
   try {
     const token = req.params.token;
-    const { newpassword, passwordConform } = req.body;
+    const { newPassword, passwordConfirm } = req.body;
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
     const user = await userModel.findOne({
       password_reset_token: hashedToken,
@@ -192,8 +191,8 @@ const restPassword = async (req, res, next) => {
     if (!user) {
       throw new ApiError("Reset password link is expired", 412);
     }
-    user.password = newpassword;
-    user.passwordConfirm = passwordConform;
+    user.password = newPassword;
+    user.passwordConfirm = passwordConfirm;
     user.password_reset_token = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
@@ -209,9 +208,9 @@ const restPassword = async (req, res, next) => {
   }
 }
 
-const updatePassword = async (req, res, _next) => {
+const updatePassword = async (req, res, next) => {
   try {
-    const { _id, oldPassword, newpassword, newPasswordConfirm } = req.body;
+    const { _id, oldPassword, newPassword, newPasswordConfirm } = req.body;
     const user = await userModel.findById(_id).select("+password");
     if (!user) {
       throw new ApiError("No such user exists!")
@@ -220,7 +219,7 @@ const updatePassword = async (req, res, _next) => {
     if (!correct) {
       throw new ApiError("The old password provieded is incorrect!", 412)
     }
-    user.password = newpassword;
+    user.password = newPassword;
     user.passwordConfirm = newPasswordConfirm;
     await user.save();
     const jwttoken = signToken(user._id);

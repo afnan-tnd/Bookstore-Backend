@@ -1,16 +1,10 @@
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
+const { errorWrapper } = require("./utils/errorWrapper")
 dotenv.config({ path: ".env" });
 const App = require("./app");
 const { reverseMap } = require("./reverseMap");
 const userHandlers = require("./socketHandlers/userHandlers");
-
-
-// cron.schedule(" */2 * * * * ", () => {
-//   get_all_list_contents();
-//   console.log("running a task every 2 minutes");
-// });
-
 mongoose
   .connect(process.env.mongourl, {
     useNewUrlParser: true,
@@ -40,3 +34,9 @@ io.on("connection", (socket) => {
   });
 });
 App.io = io;
+process.on('uncaughtException', (error) => {
+  errorWrapper(error, true)
+});
+process.on('unhandledRejection', (reason, promise) => {
+  errorWrapper(reason, true)
+});

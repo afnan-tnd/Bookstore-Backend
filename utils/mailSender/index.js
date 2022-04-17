@@ -36,7 +36,6 @@ async function templatedMailSender(
       dynamicData,
       function (err, data) {
         if (err) {
-          console.log(err);
           reject(err);
         } else {
           let mailOptions = {
@@ -48,11 +47,7 @@ async function templatedMailSender(
           transporter.sendMail(mailOptions, function (err_mail, mailData) {
             if (err_mail) {
               console.log("error occurec in nodemailer");
-              reject({
-                status: 500,
-                msg: "error in nodemailer",
-                error: err_mail,
-              });
+              reject(err_mail);
             } else {
               console.log("good mail sent");
               resolve({ mailData, msg: "email link sent" });
