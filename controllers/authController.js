@@ -7,6 +7,7 @@ const userModel = require("../models/authModel");
 const { templatedMailSender } = require("../utils/mailSender")
 const { profilepic } = require("../utils/uploadProfile");
 const { ApiError } = require("../utils/apiError");
+const { errorWrapper } = require("../utils/errorWrapper")
 const res = require("express/lib/response");
 
 const {
@@ -24,14 +25,14 @@ const signToken = (id) => {
 
 const singup = async (req, res, next) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { first_name, last_name, email, password } = req.body;
     const userExist = await userModel.findOne({ email });
     if (userExist) {
       throw new ApiError("This user already exists", 412)
     }
     const newUser = await userModel.create({
-      firstName,
-      lastName,
+      first_name,
+      last_name,
       email,
       password,
     });
@@ -46,23 +47,24 @@ const singup = async (req, res, next) => {
       },
     });
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 
 const singupGoogle = async (payload) => {
   try {
-    const { firstName, lastName, email, googleId, avator } = payload;
+    const { first_name, last_name, email, googleId, avator } = payload;
     const userExist = await userModel.findOne({ email });
     if (userExist)
       throw new ApiError("user already exist with this email", 412);
     const newUser = await userModel.create({
-      firstName,
-      lastName,
+      first_name,
+      last_name,
       email,
       password: googleId,
       avator,
-      isGoogleLogin: true,
+      is_google_login: true,
     });
     const token = signToken(newUser._id);
 
@@ -76,7 +78,8 @@ const singupGoogle = async (payload) => {
     };
     return reuslt;
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 };
 
@@ -93,8 +96,8 @@ const loginwithgoogle = async (req, res, next) => {
       // user dotes not exit with this email it mean we have to create new user
 
       const userdata = {
-        firstName: req.body.firstName,
-        lastName: req.body.lastName,
+        first_name: req.body.first_name,
+        last_name: req.body.last_name,
         email: req.body.email,
         googleId: req.body.googleId,
         avator: req.body.avatar,
@@ -102,7 +105,7 @@ const loginwithgoogle = async (req, res, next) => {
       const userResult = await singupGoogle(userdata);
       return res.status(200).json(userResult);
     }
-    if (!user?.isGoogleLogin) {
+    if (!user?.is_google_login) {
       throw new ApiError("User already exits with the email provided!", 412)
     }
     const correct = await user.correctPassword(googleId, user.password);
@@ -118,7 +121,8 @@ const loginwithgoogle = async (req, res, next) => {
       },
     })
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 
@@ -130,15 +134,14 @@ const login = async (req, res, next) => {
     }
     const user = await userModel.findOne({ email }).select("+password");
     if (!user) {
-      throw new ApiError("Incorrect email!", 412);
+      throw new ApiError("This email is not registered!", 412);
     }
     const correct = await user.correctPassword(password, user.password);
     if (!correct) {
-      throw new ApiError("Incorrect  password!", 412);
+      throw new ApiError("Incorrect password!", 412);
     }
 
     const token = signToken(user._id);
-
     res.status(201).json({
       success: true,
       data: {
@@ -147,14 +150,15 @@ const login = async (req, res, next) => {
       },
     });
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 
 const forgetPassword = async (req, res, next) => {
   try {
     const user = await userModel.findOne({ email: req.body.email });
-    if (user?.isGoogleLogin) {
+    if (user?.is_google_login) {
       throw new ApiError("No such user exists!", 412);
     }
     if (!user) {
@@ -171,7 +175,8 @@ const forgetPassword = async (req, res, next) => {
       msg: "reset password link sent successfully",
     });
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 
@@ -181,7 +186,7 @@ const restPassword = async (req, res, next) => {
     const { newpassword, passwordConform } = req.body;
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
     const user = await userModel.findOne({
-      passwordRestToken: hashedToken,
+      password_reset_token: hashedToken,
       passwordResetExpires: { $gt: Date.now() },
     });
     if (!user) {
@@ -189,7 +194,7 @@ const restPassword = async (req, res, next) => {
     }
     user.password = newpassword;
     user.passwordConfirm = passwordConform;
-    user.passwordRestToken = undefined;
+    user.password_reset_token = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
     const jwttoken = signToken(user._id);
@@ -199,7 +204,8 @@ const restPassword = async (req, res, next) => {
       msg: "password change successfully",
     });
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 
@@ -224,16 +230,17 @@ const updatePassword = async (req, res, _next) => {
       msg: "password change successfully",
     });
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 
 const updateUserData = async (req, res, next) => {
   try {
-    const { firstName, lastName, phone } = req.body;
+    const { first_name, last_name, phone } = req.body;
     const updatedUser = await userModel.findByIdAndUpdate(
       req.user._id,
-      { firstName, lastName, phone },
+      { first_name, last_name, phone },
       { new: true, runValidators: true }
     );
     if (!updatedUser) {
@@ -248,7 +255,8 @@ const updateUserData = async (req, res, next) => {
       msg: "date updated successfully",
     });
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 
@@ -281,7 +289,8 @@ const uploadProfle = async (req, res, next) => {
       throw new ApiError("image not found", 400);
     }
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse())
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 }
 /*
@@ -312,7 +321,8 @@ const setUserPassword = async (req, res, next) => {
       msg: "Password reset successfully!",
     });
   } catch (err) {
-    return res.status(err.code).json(err.getFormattedResponse());
+    const handledError = errorWrapper(err)
+    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
   }
 };
 

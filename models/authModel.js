@@ -5,13 +5,13 @@ const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema(
   {
-    firstName: {
+    first_name: {
       type: String,
-      required: true,
+      required: [true, "first_name is required field"],
     },
-    lastName: {
+    last_name: {
       type: String,
-      required: true,
+      required: [true, "last_name is required field"],
     },
     email: {
       type: String,
@@ -23,24 +23,24 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    role: { type: String, default: "admin" },
+    role: { type: String, default: "customer" },
     avator: {
       type: String,
       default:
         "https://cherryhill12.s3.sa-east-1.amazonaws.com/dummy+avator.jpg",
     },
-    isGoogleLogin: {
+    is_google_login: {
       type: Boolean,
       default: false,
     },
     password: {
       type: String,
-      required: true,
+      required: [true, "password is required field"],
 
       selected: false,
     },
-    passwordChangedAt: Date,
-    passwordRestToken: String,
+    password_changed_at: Date,
+    password_reset_token: String,
     passwordResetExpires: Date,
   },
   {
@@ -65,9 +65,9 @@ userSchema.methods.correctPassword = async function (
 };
 
 userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
-  if (this.passwordChangedAt) {
+  if (this.password_changed_at) {
     const changedTimestamp = parseInt(
-      this.passwordChangedAt.getTime() / 1000,
+      this.password_changed_at.getTime() / 1000,
       10
     );
 
@@ -79,7 +79,7 @@ userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
 
 userSchema.methods.createPasswordResetToken = function () {
   const restToken = crypto.randomBytes(32).toString("hex");
-  this.passwordRestToken = crypto
+  this.password_reset_token = crypto
     .createHash("sha256")
     .update(restToken)
     .digest("hex");
