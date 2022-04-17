@@ -9,17 +9,6 @@ const {
 
 module.exports = {
   config: {
-    REDIRECT_URL:
-      process.env.NODE_ENV === "development"
-        ? PRODUCT_HUB_REDIRECT_URL_LOCAL
-        : PRODUCT_HUB_REDIRECT_URL_DEVELOPMENT,
-    HUB_SPOT_CLIENT_ID:
-      process.env.NODE_ENV === "development"
-        ? PRODUCT_HUB_CLIENT_ID_LOCAL
-        : PRODUCT_HUB_CLIENT_ID_DEVELOPEMT,
-    HUB_SPOT_SECRET_ID:
-      process.env.NODE_ENV === "development"
-        ? PRODUCT_HUB_CLIENT_SECRET_LOCAL
-        : PRODUCT_HUB_CLIENT_SECRET_DEVELOPMENT,
+
   },
 };
