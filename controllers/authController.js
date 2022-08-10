@@ -42,8 +42,6 @@ const singup = async (req, res, next) => {
       { type: 'String', name: "first_name", value: first_name },
       { type: 'String', name: "last_name", value: last_name },
       { type: 'String', name: "email", value: email },
-      { type: 'String', name: "zip_code", value: zip_code },
-      { type: 'String', name: "address", value: address },
       { type: 'String', name: "password", value: password },
     ]);
 
@@ -114,17 +112,19 @@ const forgetPassword = async (req, res, next) => {
 
     checkExtraFields(
       req.body,
-      ["email",]
+      ["email"]
     );
     verifyRequiredFieldsHelper([
       { type: 'String', name: "email", value: email },
     ]);
 
+    const user = await userModel.findOne({ email: email });
+
     if (user?.is_google_login) {
       throw new MainErrorHandler("No such user exists!", 412);
     }
     if (!user) {
-      throw new MainErrorHandler("This Link is no more long er vilad!", 412)
+      throw new MainErrorHandler("This link is no more valid!", 412)
     }
     const resetToken = await user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
@@ -145,14 +145,14 @@ const forgetPassword = async (req, res, next) => {
 const restPassword = async (req, res, next) => {
   try {
     const token = req.params.token;
-    const { newpassword } = req.body;
+    const { password } = req.body;
 
     checkExtraFields(
       req.body,
-      ["newpassword"]
+      ["password"]
     );
     verifyRequiredFieldsHelper([
-      { type: 'String', name: "newpassword", value: newpassword },
+      { type: 'String', name: "password", value: password },
       { type: 'String', name: "token", value: token },
     ]);
 
@@ -164,8 +164,8 @@ const restPassword = async (req, res, next) => {
     if (!user) {
       throw new MainErrorHandler("Reset password link is expired", 412);
     }
-    user.password = newPassword;
-    user.passwordConfirm = passwordConfirm;
+    user.password = password;
+
     user.password_reset_token = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
@@ -173,7 +173,7 @@ const restPassword = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       data: { token: jwttoken, },
-      msg: "password change successfully",
+      msg: "Password reset successfully",
     });
   } catch (err) {
     const handledError = errorWrapper(err)
