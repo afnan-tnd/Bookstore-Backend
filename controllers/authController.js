@@ -129,7 +129,7 @@ const forgetPassword = async (req, res, next) => {
     const resetToken = await user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
     const resetURL = BASE_LINK_FORGET_EMAIL + "/" + resetToken;
-    const data = { link: resetURL };
+    const data = { link: resetURL, firstName: user.first_name };
 
     templatedMailSender(email, "./forgotPassword.ejs", data, "Forgot password")
     return res.status(200).json({
