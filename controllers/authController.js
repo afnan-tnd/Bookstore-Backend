@@ -3,12 +3,14 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
 const userModel = require("../models/authModel");
-//const AppError = require("../utils/appError");
 const { templatedMailSender } = require("../utils/mailSender")
-const { profilepic } = require("../utils/uploadProfile");
-const { ApiError } = require("../utils/apiError");
+const { profilepic } = require("../utils/s3Helpers");
+const { MainErrorHandler } = require("../utils/MainErrorHandler");
 const { errorWrapper } = require("../utils/errorWrapper")
-const res = require("express/lib/response");
+const {
+  verifyRequiredFieldsHelper,
+  checkExtraFields
+} = require("../utils/fieldOperations");
 
 const {
   JWT_SERCTET,
@@ -25,10 +27,29 @@ const signToken = (id) => {
 
 const singup = async (req, res, next) => {
   try {
-    const { first_name, last_name, email, password } = req.body;
+    const {
+      first_name,
+      last_name,
+      email,
+      password,
+    } = req.body;
+
+    checkExtraFields(
+      req.body,
+      ["first_name", "last_name", "email", "zip_code", "address", "password"]
+    );
+    verifyRequiredFieldsHelper([
+      { type: 'String', name: "first_name", value: first_name },
+      { type: 'String', name: "last_name", value: last_name },
+      { type: 'String', name: "email", value: email },
+      { type: 'String', name: "zip_code", value: zip_code },
+      { type: 'String', name: "address", value: address },
+      { type: 'String', name: "password", value: password },
+    ]);
+
     const userExist = await userModel.findOne({ email });
     if (userExist) {
-      throw new ApiError("This user already exists", 412)
+      throw new MainErrorHandler("This user already exists", 412)
     }
     const newUser = await userModel.create({
       first_name,
@@ -52,93 +73,26 @@ const singup = async (req, res, next) => {
   }
 }
 
-const singupGoogle = async (payload) => {
-  try {
-    const { first_name, last_name, email, googleId, avator } = payload;
-    const userExist = await userModel.findOne({ email });
-    if (userExist)
-      throw new ApiError("user already exist with this email", 412);
-    const newUser = await userModel.create({
-      first_name,
-      last_name,
-      email,
-      password: googleId,
-      avator,
-      is_google_login: true,
-    });
-    const token = signToken(newUser._id);
-
-    const reuslt = {
-      success: true,
-      msg: "User Registered successfully",
-      data: {
-        token,
-        user: newUser,
-      },
-    };
-    return reuslt;
-  } catch (err) {
-    const handledError = errorWrapper(err)
-    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
-  }
-};
-
-const loginwithgoogle = async (req, res, next) => {
-  try {
-    const { email, googleId } = req.body;
-    if (!email) {
-      throw new ApiError("email is required API call parameter!", 412)
-    }
-
-    const user = await userModel.findOne({ email }).select("+password");
-
-    if (!user) {
-      // user dotes not exit with this email it mean we have to create new user
-
-      const userdata = {
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
-        email: req.body.email,
-        googleId: req.body.googleId,
-        avator: req.body.avatar,
-      };
-      const userResult = await singupGoogle(userdata);
-      return res.status(200).json(userResult);
-    }
-    if (!user?.is_google_login) {
-      throw new ApiError("User already exits with the email provided!", 412)
-    }
-    const correct = await user.correctPassword(googleId, user.password);
-    if (!correct) {
-      throw new ApiError("Incorrect email or password provided!", 412)
-    }
-    const token = signToken(user._id);
-    res.status(201).json({
-      success: true,
-      data: {
-        token,
-        user,
-      },
-    })
-  } catch (err) {
-    const handledError = errorWrapper(err)
-    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
-  }
-}
-
 const login = async (req, res, next) => {
   try {
     const { password, email } = req.body;
-    if (!password || !email) {
-      throw new ApiError("email and password is required", 412);
-    }
+
+    checkExtraFields(
+      req.body,
+      ["email", "password"]
+    );
+    verifyRequiredFieldsHelper([
+      { type: 'String', name: "email", value: email },
+      { type: 'String', name: "password", value: password },
+    ]);
+
     const user = await userModel.findOne({ email }).select("+password");
     if (!user) {
-      throw new ApiError("This email is not registered!", 412);
+      throw new MainErrorHandler("This email is not registered!", 412);
     }
     const correct = await user.correctPassword(password, user.password);
     if (!correct) {
-      throw new ApiError("Incorrect password!", 412);
+      throw new MainErrorHandler("Incorrect password!", 412);
     }
     const token = signToken(user._id);
     res.status(200).json({
@@ -156,18 +110,27 @@ const login = async (req, res, next) => {
 
 const forgetPassword = async (req, res, next) => {
   try {
-    const user = await userModel.findOne({ email: req.body.email });
+    const { email } = req.body;
+
+    checkExtraFields(
+      req.body,
+      ["email",]
+    );
+    verifyRequiredFieldsHelper([
+      { type: 'String', name: "email", value: email },
+    ]);
+
     if (user?.is_google_login) {
-      throw new ApiError("No such user exists!", 412);
+      throw new MainErrorHandler("No such user exists!", 412);
     }
     if (!user) {
-      throw new ApiError("This Link is no more long er vilad!", 412)
+      throw new MainErrorHandler("This Link is no more long er vilad!", 412)
     }
     const resetToken = await user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
     const resetURL = BASE_LINK_FORGET_EMAIL + "/" + resetToken;
     const data = { link: resetURL };
-    const { email } = user;
+
     templatedMailSender(email, "./forgotPassword.ejs", data, "Forgot password")
     return res.status(200).json({
       success: true,
@@ -182,14 +145,24 @@ const forgetPassword = async (req, res, next) => {
 const restPassword = async (req, res, next) => {
   try {
     const token = req.params.token;
-    const { newPassword, passwordConfirm } = req.body;
+    const { newpassword } = req.body;
+
+    checkExtraFields(
+      req.body,
+      ["newpassword"]
+    );
+    verifyRequiredFieldsHelper([
+      { type: 'String', name: "newpassword", value: newpassword },
+      { type: 'String', name: "token", value: token },
+    ]);
+
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
     const user = await userModel.findOne({
       password_reset_token: hashedToken,
       passwordResetExpires: { $gt: Date.now() },
     });
     if (!user) {
-      throw new ApiError("Reset password link is expired", 412);
+      throw new MainErrorHandler("Reset password link is expired", 412);
     }
     user.password = newPassword;
     user.passwordConfirm = passwordConfirm;
@@ -210,14 +183,25 @@ const restPassword = async (req, res, next) => {
 
 const updatePassword = async (req, res, next) => {
   try {
-    const { _id, oldPassword, newPassword, newPasswordConfirm } = req.body;
-    const user = await userModel.findById(_id).select("+password");
+    const focusedUserId = req.user._id;
+    const { oldPassword, newPassword, newPasswordConfirm } = req.body;
+
+    checkExtraFields(
+      req.body,
+      ["oldPassword", "newPassword", "newPasswordConfirm"]
+    );
+    verifyRequiredFieldsHelper([
+      { type: 'String', name: "oldPassword", value: oldPassword },
+      { type: 'String', name: "newPassword", value: newPassword },
+      { type: 'String', name: "newPasswordConfirm", value: newPasswordConfirm },
+    ]);
+    const user = await userModel.findById(focusedUserId).select("+password");
     if (!user) {
-      throw new ApiError("No such user exists!")
+      throw new MainErrorHandler("No such user exists!")
     }
     const correct = await user.correctPassword(oldPassword, user.password);
     if (!correct) {
-      throw new ApiError("The old password provieded is incorrect!", 412)
+      throw new MainErrorHandler("The old password provieded is incorrect!", 412)
     }
     user.password = newPassword;
     user.passwordConfirm = newPasswordConfirm;
@@ -237,13 +221,26 @@ const updatePassword = async (req, res, next) => {
 const updateUserData = async (req, res, next) => {
   try {
     const { first_name, last_name, phone } = req.body;
+    const focusedUserId = req.user._id;
+
+    checkExtraFields(
+      req.body,
+      ["first_name", "last_name", "phone"]
+    );
+    verifyRequiredFieldsHelper([
+      { type: 'String', name: "focusedUserId", value: focusedUserId.toString() },
+      { type: 'String', name: "first_name", value: first_name },
+      { type: 'String', name: "last_name", value: last_name },
+      { type: 'String', name: "phone", value: email },
+    ]);
+
     const updatedUser = await userModel.findByIdAndUpdate(
       req.user._id,
       { first_name, last_name, phone },
       { new: true, runValidators: true }
     );
     if (!updatedUser) {
-      throw new ApiError("No such user exists!", 412)
+      throw new MainErrorHandler("No such user exists!", 412)
     }
 
     return res.status(200).json({
@@ -251,7 +248,7 @@ const updateUserData = async (req, res, next) => {
       data: {
         user: updatedUser,
       },
-      msg: "date updated successfully",
+      msg: "Profile updated successfully",
     });
   } catch (err) {
     const handledError = errorWrapper(err)
@@ -264,7 +261,7 @@ const uploadProfle = async (req, res, next) => {
     let token;
     const result = await profilepic(req.file);
     if (!result) {
-      throw new ApiError("Something went wrong while uploading image", 500)
+      throw new MainErrorHandler("Something went wrong while uploading image", 500)
     }
 
     token = req.headers.authorization.split(" ")[1];
@@ -273,19 +270,19 @@ const uploadProfle = async (req, res, next) => {
     if (result) {
       const updatedUser = await userModel.findByIdAndUpdate(
         decoded.id,
-        { avator: result.imageUrl },
+        { avatar: result.imageUrl },
         { new: true }
       );
       if (!updatedUser) {
-        return ApiError("user did not found", 400)
+        return MainErrorHandler("User did not found", 400)
       }
       return res.status(200).json({
         success: true,
-        msg: "image uploaded successfully",
+        msg: "Image uploaded successfully",
         data: { user: updatedUser },
       });
     } else {
-      throw new ApiError("image not found", 400);
+      throw new MainErrorHandler("Image not found", 400);
     }
   } catch (err) {
     const handledError = errorWrapper(err)
@@ -299,17 +296,24 @@ const uploadProfle = async (req, res, next) => {
 const setUserPassword = async (req, res, next) => {
   try {
     const { password, token } = req.body;
-    if (!password || !token) {
-      throw new ApiError("both token and password and token are required", 412);
-    }
+
+    checkExtraFields(
+      req.body,
+      ["password", "token",]
+    );
+    verifyRequiredFieldsHelper([
+      { type: 'String', name: "password", value: password },
+      { type: 'String', name: "token", value: token },
+    ]);
+
     const decoded = jwt.verify(token, JWT_SERCTET);
     if (decoded.id) {
       const foundedUser = await userModel.findOne({ _id: decoded.id });
       if (!foundedUser) {
-        throw new ApiError("No such user exists invalid token", 412);
+        throw new MainErrorHandler("No such user exists invalid token", 412);
       }
       if (foundedUser.usedLink == true) {
-        throw new ApiError("This link is already used");
+        throw new MainErrorHandler("This link is already used");
       }
       foundedUser.password = password;
       foundedUser.usedLink = true;
@@ -332,7 +336,6 @@ module.exports = {
   restPassword,
   updatePassword,
   updateUserData,
-  loginwithgoogle,
   uploadProfle,
   setUserPassword,
 };

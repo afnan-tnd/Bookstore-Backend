@@ -8,7 +8,6 @@ const {
   updatePassword,
   uploadProfle,
   updateUserData,
-  loginwithgoogle,
   setUserPassword,
 } = require("../controllers/authController");
 
@@ -29,7 +28,6 @@ router.patch("/updatePassword", protected, updatePassword);
 
 router.patch("/updateUserData", protected, updateUserData);
 
-router.post("/googlelogin", loginwithgoogle);
 router.post("/uploadProfle", upload.single("image"), uploadProfle);
 router.post("/setUserPassword", setUserPassword);
 module.exports = router;

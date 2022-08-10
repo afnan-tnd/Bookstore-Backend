@@ -17,18 +17,21 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       lowercase: true,
-      validate: [validator.isEmail, "invalid email"],
+      validate: [validator.isEmail, "Invalid email"],
       required: [true, "email is required field"]
     },
     phone: {
       type: String,
       default: null,
     },
-    role: { type: String, default: "customer" },
-    avator: {
+    role: {
+      type: String,
+      default: "user",
+    },
+    avatar: {
       type: String,
       default:
-        "https://cherryhill12.s3.sa-east-1.amazonaws.com/dummy+avator.jpg",
+        "https://cherryhill12.s3.sa-east-1.amazonaws.com/dummy+avatar.jpg",
     },
     is_google_login: {
       type: Boolean,

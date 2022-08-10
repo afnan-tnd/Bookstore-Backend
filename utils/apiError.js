@@ -1,16 +1,11 @@
-class ApiError extends Error {
-    constructor(message, errorCode = 400) {
+class AppError extends Error {
+    constructor(message, statusCode) {
         super(message);
-        this.errorCode = errorCode;
-        this.name = "ApiError"
-    }
-    getFormattedResponse() {
-        const errorsArray = this.message.split(",")
-        return {
-            success: false,
-            msg: this.message,
-            data: { errors: [...errorsArray] }
-        }
+        this.statusCode = statusCode;
+        this.success = false;
+        this.isOperational = true;
+        Error.captureStackTrace(this, this.constructor);
     }
 }
-module.exports = { ApiError }
+
+module.exports = AppError;

@@ -5,9 +5,10 @@ module.exports = (io, socket, reverseMap) => {
         reverseMap[[data.userId]] = socket.id
         socket.userId = data.userId
     })
-    socket.on("removeUser", (data) => {
-        data = JSON.parse(data)
-        console.log("📝📝Client requested to remove user with user id:", data.userId)
+    socket.on("removeUser", () => {
+        const socketId = socket.userId
+        data = socketId
+        console.log("📝📝Client requested to remove user with user id:", socketId)
         delete reverseMap[data.userId]
         socket.userId = undefined
     })
