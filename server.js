@@ -16,7 +16,7 @@ mongoose
     console.log("database is connected successfully");
   });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 const server = App.listen(PORT, () => {
   console.log(`server is running on port ${PORT}`);
@@ -30,7 +30,7 @@ io.on("connection", (socket) => {
   console.log("A user got connected with socket id", socket.id);
   userHandlers(io, socket, reverseMap);
   socket.on("disconnect", () => {
-    console.log("disconnect occured for socket-id", socket.id);
+    console.log("disconnect occurred for socket-id", socket.id);
   });
 });
 App.io = io;

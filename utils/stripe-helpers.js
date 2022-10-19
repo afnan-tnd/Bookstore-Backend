@@ -73,7 +73,7 @@ const createConnectAccount = async (
         throw errorWrapper(err);
     }
 };
-const retriveConnectAccount = async (data) => {
+const retrieveConnectAccount = async (data) => {
     try {
         const { connected_account_id, ssn } = data;
         const account = await stripe.accounts.retrieve(
@@ -121,14 +121,14 @@ const updateCustomerDefSource = async (data) => {
 /**
  * @param {Object} data
  * @param {String} data.customer_id - customers stripe account id
- * @param {Number} data.ammount - amount to be paid by customer
+ * @param {Number} data.amount - amount to be paid by customer
 */
 const chargeCustomer = async (
     data,
 ) => {
     try {
         //customer_id is stripe_customer_id
-        //amount is amount to be transfered
+        //amount is amount to be transferred
         let {
             customer_id,
             amount,
@@ -167,17 +167,17 @@ const chargeCustomer = async (
 
 /**
  * @param {Object} data
- * @param {String} data.accound_id - providers connected account id
+ * @param {String} data.account_id - providers connected account id
  * @param {String} data.charge_id - providers connected account id
- * @param {Number} data.ammount - amount to be paid by customer
+ * @param {Number} data.amount - amount to be paid by customer
 */
 const payProvider = async (
     data,
 ) => {
     try {
         //account_id is connected account id
-        //amount is amount to be transfered
-        // chargeid from which charge is created
+        //amount is amount to be transferred
+        // charge id from which charge is created
         let {
             account_id,
             amount,
@@ -209,9 +209,9 @@ const payProvider = async (
 //DDD charge start
 /**
  * @param {Object} data
- * @param {String} data.accound_id - providers connected account id
+ * @param {String} data.account_id - providers connected account id
  * @param {String} data.customer_id - customers stripe account id
- * @param {Number} data.ammount - amount to be paid by customer
+ * @param {Number} data.amount - amount to be paid by customer
 */
 const chargeCustomerAndPayProvider = async (
     data,
@@ -219,7 +219,7 @@ const chargeCustomerAndPayProvider = async (
     try {
         //account_id is connected account id
         //customer_id is stripe_customer_id
-        //amount is amount to be transfered
+        //amount is amount to be transferer
         let {
             account_id,
             customer_id,
@@ -241,7 +241,7 @@ const chargeCustomerAndPayProvider = async (
         });
 
         if (charge.id) {
-            //charge created sucessfully now paying from the chrge
+            //charge created successfully now paying from the charge
             //on the behalf of customer
             const transfer = await stripe.transfers.create({
                 amount: amountForProvider,
@@ -269,7 +269,7 @@ const chargeCustomerAndPayProvider = async (
     }
 };
 //DDD escrow start
-const createUncapturedCharge = async (data) => {
+const createUnCapturedCharge = async (data) => {
     try {
         let { amount, customer_id } = data;
         amount = Math.ceil(amount * 100);
@@ -287,12 +287,12 @@ const createUncapturedCharge = async (data) => {
         return { status: false, errors: [err.message] };
     }
 };
-const chargeCustPayProviderEscrow = async (data) => {
+const chargeCustomerPayProviderEscrow = async (data) => {
     try {
         let {
             account_id, //connected account id of provider
             job_id,
-            charge_id, //the id of job which is completed by provier
+            charge_id, //the id of job which is completed by provider
         } = data;
 
         let amount = 1
@@ -318,7 +318,7 @@ const chargeCustPayProviderEscrow = async (data) => {
 
         if (transfer.id) {
             console.log(
-                "Everthing done from chargeCustomerAndPayProvider() , with source Customer",
+                "Everything done from chargeCustomerAndPayProvider() , with source Customer",
             );
             console.log("card last 4 is====>", charge.source.last4);
 
@@ -472,9 +472,9 @@ module.exports = {
     chargeCustomerAndPayProvider,
     deleteCustomerCard,
     editBankData,
-    chargeCustPayProviderEscrow,
-    retriveConnectAccount,
-    createUncapturedCharge,
+    chargeCustomerPayProviderEscrow,
+    retrieveConnectAccount,
+    createUnCapturedCharge,
     createStripeCustomer,
     updateCustomerDefSource,
     getAllCustomerCards,

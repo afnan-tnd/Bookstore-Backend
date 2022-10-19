@@ -1,1 +1,1 @@
-# NodeJs vanilla JavaSript boilerplate
+# NodeJs vanilla JavaScript boilerplate

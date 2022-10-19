@@ -7,7 +7,7 @@ const errorWrapper = (err, isUnhandledType = false, code = 400) => {
             err = new MainErrorHandler(err.message, codeToUse)
         }
         console.log(
-            "💥💥💥💥.\n Unhandled type of error occured:\n",
+            "💥💥💥💥.\n Unhandled type of error occurred:\n",
             err.getFormattedResponse(),
             "\n💥💥💥💥\n ii5298666"
         )

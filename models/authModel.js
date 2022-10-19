@@ -30,8 +30,6 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
-      default:
-        "https://cherryhill12.s3.sa-east-1.amazonaws.com/dummy+avatar.jpg",
     },
     is_google_login: {
       type: Boolean,

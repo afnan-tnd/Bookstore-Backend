@@ -13,6 +13,5 @@ class MainErrorHandler extends Error {
             errors: [...errorsArray]
         }
     }
-    logUnhadled(err) { }
 }
 module.exports = { MainErrorHandler }

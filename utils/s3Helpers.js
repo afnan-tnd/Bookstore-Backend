@@ -19,7 +19,7 @@ const s3bucket = new AWS.S3({
  * @param {string} file.originalname
  * @param {Buffer} file.buffer
  * @param {string} file.mimetype
- * @param {Objec} uploadData
+ * @param {Object} uploadData
  * @param {string} uploadData.uploadDestination - required path of the file on s3
 */
 exports.uploadFileHelper = async (file, uploadData = {}) => {
@@ -27,7 +27,7 @@ exports.uploadFileHelper = async (file, uploadData = {}) => {
     const fileToUpload = file;
     /*
       uploadDestination can be a folder name so that we can upload a 
-      file ater in a folder
+      file aFter in a folder
     */
     const { uploadDestination } = uploadData
     let uploadKey = uploadDestination
@@ -57,22 +57,3 @@ exports.uploadFileHelper = async (file, uploadData = {}) => {
   }
 }
 
-exports.profilepic = async (image) => {
-  if (image) {
-    const params = {
-      Bucket: AWS_BUCKET_NAME,
-      Key: image.originalname,
-      Body: image.buffer,
-      ContentType: image.mimetype,
-      ACL: 'public-read',
-    };
-    const s3Upload = await s3bucket.upload(params).promise();
-
-    let imageUrl = s3Upload.Location;
-    let imageKey = s3Upload.key;
-    const result = { imageUrl, imageKey };
-    return result;
-  } else {
-    return
-  }
-};

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const userModel = require('../models/authModel');
 const { errorWrapper } = require("../utils/errorWrapper")
 const { MainErrorHandler } = require("../utils/MainErrorHandler")
-const { JWT_SERCTET } = process.env;
+const { JWT_SECRET } = process.env;
 
 
 exports.protected = async (req, res, next) => {
@@ -20,7 +20,7 @@ exports.protected = async (req, res, next) => {
       throw new MainErrorHandler('you are not logged in ', 401)
     }
 
-    const decoded = await promisify(jwt.verify)(token, JWT_SERCTET);
+    const decoded = await promisify(jwt.verify)(token, JWT_SECRET);
 
     const foundedUser = await userModel.findById(decoded.id);
 

@@ -1,4 +1,3 @@
-const mongoose = require("mongoose")
 const ObjectId = require("mongoose").Types.ObjectId;
 function isValidObjectId(id) {
     if (ObjectId.isValid(id)) {

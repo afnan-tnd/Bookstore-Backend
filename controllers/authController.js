@@ -1,11 +1,9 @@
-const { promisify } = require("util");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
 const userModel = require("../models/authModel");
 const { templatedMailSender } = require("../utils/mailSender")
-const { profilepic } = require("../utils/s3Helpers");
-const { MainErrorHandler } = require("../utils/MainErrorHandler");
+const { MainErrorHandler } = require("../utils/MainErrorHandler")
 const { errorWrapper } = require("../utils/errorWrapper")
 const {
   verifyRequiredFieldsHelper,
@@ -13,19 +11,19 @@ const {
 } = require("../utils/fieldOperations");
 
 const {
-  JWT_SERCTET,
+  JWT_SECRET,
   JWT_EXPIRE_IN,
   BASE_LINK_FORGET_EMAIL,
 } = process.env;
 
 const signToken = (id) => {
-  const token = jwt.sign({ id }, JWT_SERCTET, {
+  const token = jwt.sign({ id }, JWT_SECRET, {
     expiresIn: JWT_EXPIRE_IN,
   });
   return token;
 };
 
-const singup = async (req, res, next) => {
+const signup = async (req, res, next) => {
   try {
     const {
       first_name,
@@ -169,10 +167,10 @@ const restPassword = async (req, res, next) => {
     user.password_reset_token = undefined;
     user.passwordResetExpires = undefined;
     await user.save();
-    const jwttoken = signToken(user._id);
+    const jwtToken = signToken(user._id);
     return res.status(200).json({
       success: true,
-      data: { token: jwttoken, },
+      data: { token: jwtToken, },
       msg: "Password reset successfully",
     });
   } catch (err) {
@@ -201,15 +199,15 @@ const updatePassword = async (req, res, next) => {
     }
     const correct = await user.correctPassword(oldPassword, user.password);
     if (!correct) {
-      throw new MainErrorHandler("The old password provieded is incorrect!", 412)
+      throw new MainErrorHandler("The old password provided is incorrect!", 412)
     }
     user.password = newPassword;
     user.passwordConfirm = newPasswordConfirm;
     await user.save();
-    const jwttoken = signToken(user._id);
+    const jwtToken = signToken(user._id);
     return res.status(200).json({
       success: true,
-      token: jwttoken,
+      token: jwtToken,
       msg: "password change successfully",
     });
   } catch (err) {
@@ -256,42 +254,10 @@ const updateUserData = async (req, res, next) => {
   }
 }
 
-const uploadProfle = async (req, res, next) => {
-  try {
-    let token;
-    const result = await profilepic(req.file);
-    if (!result) {
-      throw new MainErrorHandler("Something went wrong while uploading image", 500)
-    }
 
-    token = req.headers.authorization.split(" ")[1];
-    const decoded = await promisify(jwt.verify)(token, JWT_SERCTET);
-
-    if (result) {
-      const updatedUser = await userModel.findByIdAndUpdate(
-        decoded.id,
-        { avatar: result.imageUrl },
-        { new: true }
-      );
-      if (!updatedUser) {
-        return MainErrorHandler("User did not found", 400)
-      }
-      return res.status(200).json({
-        success: true,
-        msg: "Image uploaded successfully",
-        data: { user: updatedUser },
-      });
-    } else {
-      throw new MainErrorHandler("Image not found", 400);
-    }
-  } catch (err) {
-    const handledError = errorWrapper(err)
-    return res.status(handledError.errorCode).json(handledError.getFormattedResponse())
-  }
-}
 /*
-  This route is use to set passsword of the users who join some admin 
-  as his/her teeam members
+  This route is use to set password of the users who join some admin 
+  as his/her team members
 */
 const setUserPassword = async (req, res, next) => {
   try {
@@ -306,7 +272,7 @@ const setUserPassword = async (req, res, next) => {
       { type: 'String', name: "token", value: token },
     ]);
 
-    const decoded = jwt.verify(token, JWT_SERCTET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     if (decoded.id) {
       const foundedUser = await userModel.findOne({ _id: decoded.id });
       if (!foundedUser) {
@@ -330,12 +296,11 @@ const setUserPassword = async (req, res, next) => {
 };
 
 module.exports = {
-  singup,
+  signup,
   login,
   forgetPassword,
   restPassword,
   updatePassword,
   updateUserData,
-  uploadProfle,
   setUserPassword,
 };

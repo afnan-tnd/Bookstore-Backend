@@ -1,12 +1,11 @@
 const express = require("express");
 
 const {
-  singup,
+  signup,
   login,
   forgetPassword,
   restPassword,
   updatePassword,
-  uploadProfle,
   updateUserData,
   setUserPassword,
 } = require("../controllers/authController");
@@ -19,7 +18,7 @@ const storage = multer.memoryStorage();
 
 const upload = multer({ storage });
 
-router.post("/singup", singup);
+router.post("/signup", signup);
 router.post("/login", login);
 router.post("/forgetPassword", forgetPassword);
 
@@ -28,6 +27,5 @@ router.patch("/updatePassword", protected, updatePassword);
 
 router.patch("/updateUserData", protected, updateUserData);
 
-router.post("/uploadProfle", upload.single("image"), uploadProfle);
 router.post("/setUserPassword", setUserPassword);
 module.exports = router;
