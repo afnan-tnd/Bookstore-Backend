@@ -4,6 +4,8 @@ const router = express.Router();
 
 router.get("/", (req, res, next) => {
     res.status(200).send(`The server is healthy!`);
+    // next();
 });
+
 
 module.exports = router;

@@ -4,6 +4,8 @@ const morgan = require("morgan");
 
 const rootRoute = require("./routes/root");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const bookRoutes = require("./routes/bookRoutes");
 
 const appError = require("./utils/appError");
 
@@ -22,6 +24,8 @@ app.use(express.json());
 
 app.use("/", rootRoute);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/user",userRoutes);
+app.use("/api/book",bookRoutes);
 app.all("*", (req, res, next) => {
   next(new appError(`can not find ${req.originalUrl} on this server!`, 404));
 });
